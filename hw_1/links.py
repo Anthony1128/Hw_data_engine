@@ -1,8 +1,10 @@
 import os
+import sys
 import hashlib
 
 # input_path = os.getcwd()
 # print(input_path)
+
 
 def hard_link(input_path):
     # collect all files and directories 
@@ -18,17 +20,19 @@ def hard_link(input_path):
             filehash = hashlib.md5(content).hexdigest()
             if filehash in files_hash.keys():
                 originfile = files_hash[filehash]
-                # print(f'{file_path} is a duplicate of {originfile}')
                 os.remove(file_path)
                 os.link(originfile, file_path)
             else:
                 files_hash[filehash] = file_path
     return files_hash
 
-# hard_link(input_path)
+
+def main(input_path):
+    hard_link(input_path)
 
 
-
+if __name__ == '__main__':
+    main(sys.argv[1])
 
 
 
