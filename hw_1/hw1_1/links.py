@@ -27,16 +27,16 @@ def hard_link(input_path):
     return files_hash
 
 
-def main(input_path):
-    hard_link(input_path)
-
-
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('dir', help='transform duplicate of a file '
                                     'to a hard link in given directory')
     args = parser.parse_args()
-    main(args.dir)
+    hard_link(args.dir)
+
+
+if __name__ == '__main__':
+    main()
 
 
 
