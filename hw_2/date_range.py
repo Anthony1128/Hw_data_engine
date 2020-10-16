@@ -1,26 +1,49 @@
 import psycopg2
+import argparse
+
+# start_date = '2013-07-29'
+# end_date = '2013-10-29'
+
+# DB parameters
+HOST = 'localhost'
+DB_NAME = 'hw2_test'
+USER = 'anthony'
 
 
-start_date = '2013-07-29'
-end_date = '2013-10-29'
-
-query = '''
-select "Product Name", 
-    count(distinct "Complaint ID") as issues_amount, 
-    count(case when "Timely Response" = 'Yes' then 1 end) as t_resp, 
-    count(case when "Consumer Disputed" = 'Yes' then 1 end) as c_disp
-from consumercomplaints
-where "Date Received" between '{}'::date and '{}'::date
-group by "Product Name"
-order by issues_amount desc;'''.format(start_date, end_date)
-
-conn = psycopg2.connect("host=localhost dbname=hw2_test user=anthony")
-cur = conn.cursor()
-cur.execute(query)
-records = cur.fetchall()
-for record in records:
-    print(record)
-cur.close()
-conn.close()
+# preparing sql query SELECT
+def select_query(start_date, end_date, table='consumercomplaints'):
+    query = '''
+    select "Product Name", 
+        count(distinct "Complaint ID") as issues_amount, 
+        count(case when "Timely Response" = 'Yes' then 1 end) as t_resp, 
+        count(case when "Consumer Disputed" = 'Yes' then 1 end) as c_disp
+    from {}
+    where "Date Received" between '{}'::date and '{}'::date
+    group by "Product Name"
+    order by issues_amount desc;'''.format(table, start_date, end_date)
+    return query
 
 
+def main():
+    # getting date arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('start_date',
+                        help='start date example input format: 2013-07-29')
+    parser.add_argument('end_date',
+                        help='end date example input format: 2013-10-29')
+    args = parser.parse_args()
+
+    # executing query
+    conn = psycopg2.connect(host=HOST, dbname=DB_NAME, user=USER)
+    cur = conn.cursor()
+    cur.execute(select_query(args.start_date, args.end_date))
+    records = cur.fetchall()
+    print('Product Name, issues_amount, Timely Response, Consumer Disputed')
+    for id_r, record in enumerate(records):
+        print(id_r, record)
+    cur.close()
+    conn.close()
+
+
+if __name__ == '__main__':
+    main()
