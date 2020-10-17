@@ -12,15 +12,15 @@ USER = 'anthony'
 
 # preparing sql query SELECT
 def select_query(start_date, end_date, table='consumercomplaints'):
-    query = '''
+    query = f'''
     select "Product Name", 
         count(distinct "Complaint ID") as issues_amount, 
         count(case when "Timely Response" = 'Yes' then 1 end) as t_resp, 
         count(case when "Consumer Disputed" = 'Yes' then 1 end) as c_disp
-    from {}
-    where "Date Received" between '{}'::date and '{}'::date
+    from {table}
+    where "Date Received" between '{start_date}'::date and '{end_date}'::date
     group by "Product Name"
-    order by issues_amount desc;'''.format(table, start_date, end_date)
+    order by issues_amount desc;'''
     return query
 
 
@@ -37,6 +37,8 @@ def main():
     conn = psycopg2.connect(host=HOST, dbname=DB_NAME, user=USER)
     cur = conn.cursor()
     cur.execute(select_query(args.start_date, args.end_date))
+
+    # displaying the result
     records = cur.fetchall()
     print('Product Name, issues_amount, Timely Response, Consumer Disputed')
     for id_r, record in enumerate(records):

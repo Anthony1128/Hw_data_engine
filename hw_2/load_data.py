@@ -22,11 +22,11 @@ def create_tab(csv_file='P9-ConsumerComplaints.csv'):
     create_table = 'CREATE TABLE ConsumerComplaints (id SERIAL PRIMARY KEY,'
     for id_c, column in enumerate(first_line):
         if id_c == len(first_line) - 1:
-            create_table += '"' + column + '"' + ' text);'
+            create_table += f'"{column}" text);'
         elif id_c == 0:
-            create_table += '"' + column + '"' + ' date, '
+            create_table += f'"{column}" date, '
         else:
-            create_table += '"' + column + '"' + ' text, '
+            create_table += f'"{column}" text, '
     return create_table
 
 
@@ -41,9 +41,9 @@ def insert_query(csv_file='P9-ConsumerComplaints.csv', table='consumercomplaints
                 if not column:
                     column = 'None'
                 if id_c == len(first_line) - 1:
-                    insert += '$$' + column + '$$' + ');'
+                    insert += f'$${column}$$);'
                 else:
-                    insert += '$$' + column + '$$, '
+                    insert += f'$${column}$$, '
             yield insert
 
 

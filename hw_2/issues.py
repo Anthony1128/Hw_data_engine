@@ -9,18 +9,18 @@ USER = 'anthony'
 
 # preparing sql query SELECT for finding state
 def select_query(company, table='consumercomplaints'):
-    query = '''
+    query = f'''
     select "State Name", count("Complaint ID")
-    from {0} as c
-    where "Company" = '{1}'
+    from {table}
+    where "Company" = '{company}'
     group by "State Name"
     having count("Complaint ID") = (
-    select max(mycount) 
-    from (select "State Name", count("Complaint ID") as mycount
-    from {0}
-    where "Company" = '{1}'
-    group by "State Name") as bar)
-    ;'''.format(table, company)
+        select max(mycount) 
+        from (select "State Name", count("Complaint ID") as mycount
+            from {table}
+            where "Company" = '{company}'
+            group by "State Name") 
+        as bar);'''
     return query
 
 
@@ -32,8 +32,7 @@ def list_query(company, state, table='consumercomplaints'):
         "Consumer Complaint Narrative", 
         "Company Response to Consumer"
     from {table}
-    where "Company" = '{company}' and "State Name" = '{state}'
-    ;'''
+    where "Company" = '{company}' and "State Name" = '{state}';'''
     return query
 
 
