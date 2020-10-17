@@ -6,8 +6,8 @@ import argparse
 
 # DB parameters
 HOST = 'localhost'
-DB_NAME = 'hw2_test'
-USER = 'anthony'
+DB_NAME = 'postgres'
+USER = 'postgres'
 
 
 # preparing sql query SELECT
