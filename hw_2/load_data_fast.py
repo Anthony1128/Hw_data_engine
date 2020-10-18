@@ -2,7 +2,6 @@ import os
 import psycopg2
 import csv
 import time
-import requests
 
 start_time = time.time()
 
@@ -28,30 +27,13 @@ def create_tab(csv_file='P9-ConsumerComplaints.csv'):
     create_table = 'CREATE TABLE ConsumerComplaints ('
     for id_c, column in enumerate(first_line):
         if id_c == len(first_line) - 1:
+            # create_table += f'"{column}" int);'
             create_table += f'"{column}" int PRIMARY KEY);'
         elif id_c == 0:
             create_table += f'"{column}" date, '
         else:
             create_table += f'"{column}" text, '
     return create_table
-
-
-# preparing sql query INSERT INTO table from csv file
-def insert_query(csv_file='P9-ConsumerComplaints.csv', table='consumercomplaints'):
-    with open(csv_file, 'r') as file:
-        reader = csv.reader(file, dialect='mydialect')
-        first_line = next(reader)
-        for row in reader:
-            # insert = f'INSERT INTO {table} VALUES (DEFAULT, '
-            insert = f'INSERT INTO {table} VALUES ('
-            for id_c, column in enumerate(row):
-                if not column:
-                    column = 'None'
-                if id_c == len(first_line) - 1:
-                    insert += f'$${column}$$);'
-                else:
-                    insert += f'$${column}$$, '
-            yield insert
 
 
 def main():
@@ -61,10 +43,14 @@ def main():
 
     # executing query to create table and load data in it
     cur.execute(create_tab())
-    for query in insert_query():
-        cur.execute(query)
-    conn.commit()
-    cur.close()
+    query = '''
+    COPY consumercomplaints FROM stdin WITH CSV HEADER 
+    DELIMITER as ','
+    '''
+    with open('P9-ConsumerComplaints.csv', 'r') as file:
+        cur.copy_expert(sql=query, file=file)
+        conn.commit()
+        cur.close()
     conn.close()
 
 
