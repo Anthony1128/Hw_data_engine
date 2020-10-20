@@ -1,10 +1,12 @@
 import os
 import shutil
 import pytest
+import asyncio
 from random import randint
 from links import hard_link
 
 
+# creating a test case
 def create_case():
     cur_dir = os.getcwd()
     test_path = cur_dir + '/test'
@@ -50,9 +52,11 @@ def check_stat(input_path):
     return files_stat
 
 
-def test_case():
+@pytest.mark.asyncio
+async def test_case():
     test_path = create_case()
-    hard_link(test_path)
+    walk = os.walk(test_path)
+    result = [await hard_link(dirpath, dirnames, filenames) for dirpath, dirnames, filenames in walk]
     file_stat = check_stat(test_path)
     for filename in file_stat.keys():
         if 'file0' in filename:

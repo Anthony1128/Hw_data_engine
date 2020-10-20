@@ -1,42 +1,45 @@
 import os
 import hashlib
 import argparse
-
-# input_path = os.getcwd()
-# print(input_path)
+import asyncio
 
 
-def hard_link(input_path):
-    # collect all files and directories 
-    walk = os.walk(input_path)
-    # stores hash of file as key and path of file as value
-    files_hash = {}
+# stores hash of file as key and path of file as value
+files_hash = {}
 
-    for dirpath, dirnames, filenames in walk:
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            with open(file_path, 'rb') as file:
-                content = file.read()
-            filehash = hashlib.md5(content).hexdigest()
-            if filehash in files_hash.keys():
-                originfile = files_hash[filehash]
-                os.remove(file_path)
-                os.link(originfile, file_path)
-            else:
-                files_hash[filehash] = file_path
+
+# searching for duplicates and transform them into hard links
+async def hard_link(dirpath, dirnames, filenames):
+    global files_hash
+    for filename in filenames:
+        file_path = os.path.join(dirpath, filename)
+        with open(file_path, 'rb') as file:
+            content = file.read()
+        filehash = hashlib.md5(content).hexdigest()
+        if filehash in files_hash.keys():
+            originfile = files_hash[filehash]
+            os.remove(file_path)
+            os.link(originfile, file_path)
+        else:
+            files_hash[filehash] = file_path
     return files_hash
 
 
-def main():
+async def main():
+    # getting argument
     parser = argparse.ArgumentParser()
     parser.add_argument('dir', help='transform duplicate of a file '
                                     'to a hard link in given directory')
     args = parser.parse_args()
-    hard_link(args.dir)
+
+    # collect all files and directories
+    walk = os.walk(args.dir)
+
+    result = [await hard_link(dirpath, dirnames, filenames) for dirpath, dirnames, filenames in walk]
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
 
 
 
