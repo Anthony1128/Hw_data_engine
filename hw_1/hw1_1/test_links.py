@@ -38,8 +38,7 @@ def clear_case():
 
 
 # collecting stat (id and links) of all files
-def check_stat(input_path):
-    walk = os.walk(input_path)
+def check_stat(walk):
     files_stat = {}
     for dirpath, dirnames, filenames in walk:
         for filename in filenames:
@@ -57,7 +56,7 @@ async def test_case():
     test_path = create_case()
     walk = os.walk(test_path)
     result = [await hard_link(dirpath, dirnames, filenames) for dirpath, dirnames, filenames in walk]
-    file_stat = check_stat(test_path)
+    file_stat = check_stat(walk)
     for filename in file_stat.keys():
         if 'file0' in filename:
             assert file_stat['file0']['id'] == file_stat[filename]['id']

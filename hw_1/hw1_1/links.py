@@ -13,15 +13,23 @@ async def hard_link(dirpath, dirnames, filenames):
     global files_hash
     for filename in filenames:
         file_path = os.path.join(dirpath, filename)
+        stat = list(os.stat(file_path))
+        id = stat[1]
+
         with open(file_path, 'rb') as file:
             content = file.read()
         filehash = hashlib.md5(content).hexdigest()
+
         if filehash in files_hash.keys():
-            originfile = files_hash[filehash]
+            # check if it is already hard link
+            if id == files_hash[filehash][1]:
+                continue
+
+            originfile = files_hash[filehash][0]
             os.remove(file_path)
             os.link(originfile, file_path)
         else:
-            files_hash[filehash] = file_path
+            files_hash[filehash] = [file_path, id]
     return files_hash
 
 
