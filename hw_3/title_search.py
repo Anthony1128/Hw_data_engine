@@ -1,20 +1,29 @@
 import psycopg2
 import argparse
+import time
+
+start_time = time.time()
 
 # DB parameters
 HOST = 'localhost'
 DB_NAME = 'postgres'
 USER = 'postgres'
 
+# Filter genres
+FILTER = input('enter filter by genre: ').split()
+
 
 # preparing sql query SELECT for finding state
-def select_query(text, table='moviesdata'):
+def select_query(text, table='moviesdata', filter_genres=FILTER):
+    filter_query = ' '.join(filter_genres)
+    if filter_genres:
+        filter_query = f" and to_tsvector(genres) @@ plainto_tsquery('{filter_query}')"
     query = f'''
     SELECT movie_title, actor_1_name, genres, imdb_score
     FROM {table}
     WHERE to_tsvector(movie_title) @@ plainto_tsquery('{text}')
-    ORDER BY imdb_score DESC;
-    ;'''
+    {filter_query}
+    ORDER BY imdb_score DESC;'''
     return query
 
 
@@ -46,3 +55,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+    print(f'time of performance: {time.time() - start_time} seconds')
+
+
