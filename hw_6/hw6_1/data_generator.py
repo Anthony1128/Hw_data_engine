@@ -3,10 +3,11 @@ import numpy as np
 import random
 
 
+# TODO amount of days depend on month
 # Generates tuple of random start and end dates
 def random_date():
     rd_month = random.randint(1, 12)
-    rd_day = random.randint(1, 31)
+    rd_day = random.randint(1, 20)
     rd_hour = random.randint(0, 23)
     rd_minute = random.randint(0, 59)
     start_date = pd.Timestamp(2019, rd_month, rd_day, rd_hour, rd_minute)
@@ -14,7 +15,8 @@ def random_date():
     n = 10**10
     delta = start_date.value + random.randint(0, time_delta.value/n)*n
     end_date = pd.Timestamp(delta).round(freq='T')
-    return start_date.isoformat(), end_date.isoformat()
+    # return start_date.isoformat(), end_date.isoformat()
+    return start_date, end_date
 
 
 # Generates random Data Frame
