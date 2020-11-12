@@ -3,26 +3,30 @@ import numpy as np
 import requests
 from pandas.tseries.holiday import AbstractHolidayCalendar, Holiday
 import matplotlib.pyplot as plt
-from hw_6.hw6_1.data_generator import data_generate
+# from hw_6.hw6_1.data_generator import data_generate
 
-
-DATA = data_generate(10)
-# np_ar = np.array([[0, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 1, 18, 0)],
-#                   [1, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 2, 9, 30)],
-#                   [2, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 5, 8, 30)],
-#                   [3, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 12, 5, 8, 30)]])
-# DATA = pd.DataFrame(data=np_ar,
-#                     columns=['Name', 'Start Date',
-#                              'End Date']).set_index('Name')
 YEAR = 2020
 
+# DATA = data_generate(10)
+np_ar = np.array([[5, pd.Timestamp(2020, 1, 2, 8, 0), pd.Timestamp(2020, 1, 10, 10, 0)],
+                  [0, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 1, 18, 0)],
+                  [1, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 2, 9, 30)],
+                  [2, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 5, 19, 00)],
+                  [3, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 12, 5, 8, 30)],
+                  [4, pd.Timestamp(2020, 11, 1, 8, 0), pd.Timestamp(2020, 11, 1, 8, 0)]
+                  ])
+DATA = pd.DataFrame(data=np_ar,
+                    columns=['Name', 'Start Date',
+                             'End Date']).set_index('Name')
 
+
+# Preparing custom holidays from url
 class RussianHolidays(AbstractHolidayCalendar):
     global YEAR
-    url_calendar = f'http://jsoncalendar.ru/data/{YEAR}/calendar.json'
+    url_holidays_calendar = f'http://jsoncalendar.ru/data/{YEAR}/calendar.json'
 
     rules = []
-    holidays_json = requests.get(url_calendar).json()
+    holidays_json = requests.get(url_holidays_calendar).json()
     for holiday in holidays_json['days']:
         if holiday['type'] == 1:
             name = holiday['holiday_id']
@@ -31,20 +35,21 @@ class RussianHolidays(AbstractHolidayCalendar):
             rules.append(Holiday(name, month=month, day=day))
 
 
-def implementation(data):
-    result = {}
+# Counts implementation time from data frame
+def get_implementation_time(data, holiday_calendar):
+    timedelta_dict = {}
     for id_r, row in data.iterrows():
-        start_date = row[0]
-        end_date = row[1]
+        name = row.name
+        start_date = row['Start Date']
+        end_date = row['End Date']
 
         delta = pd.Timedelta(days=1)
         if end_date.hour < 8:
             delta = pd.Timedelta(days=0)
-        rus_cal = RussianHolidays()
-        bh = pd.offsets.CustomBusinessHour(start='08:00', end='18:00', calendar=rus_cal)
-        working_hours = pd.bdate_range(start_date, end_date + delta, freq=bh)
-
-        if 8 <= end_date.hour < 18:
+        business_hours = pd.offsets.CustomBusinessHour(start='08:00', end='18:00', calendar=holiday_calendar)
+        working_hours = pd.bdate_range(start_date, end_date + delta, freq=business_hours)
+        print(working_hours)
+        if 8 <= end_date.hour < 18 and len(working_hours):
             i = len(working_hours) - 1
             while end_date.hour != working_hours[i].hour:
                 i -= 1
@@ -53,54 +58,59 @@ def implementation(data):
         else:
             hours = len(working_hours)
             minutes = 0
-        result[pd.Timedelta(hours=hours, minutes=minutes)] = id_r
-    return result
+        timedelta_dict[name] = pd.Timedelta(hours=hours, minutes=minutes)
+    print(timedelta_dict)
+    return timedelta_dict
 
 
-def add_column(data):
-    result = implementation(DATA)
-    data['Implementation time'] = result
+# Adds new column to data frame with implementation time
+def add_column_to_df(data):
+    rus_cal = RussianHolidays()
+    timedelta_dict = get_implementation_time(data, rus_cal)
+    data['Implementation time'] = pd.Series(timedelta_dict)
     return data
 
 
-def df_month():
-    statistic_get = {}
-    statistic_end = {}
-    data = add_column(DATA)
+# Counts amount of dates from data frame by month
+def count_dates_from_df(data):
+    count_start_date = {}
+    count_end_date = {}
+    data = add_column_to_df(data)
 
     for id_r, row in data.iterrows():
         start_date = row[0]
-        if start_date.month in statistic_get:
-            statistic_get[start_date.month] += 1
+        if start_date.month in count_start_date:
+            count_start_date[start_date.month] += 1
         else:
-            statistic_get[start_date.month] = 1
+            count_start_date[start_date.month] = 1
 
         end_date = row[1]
-        if end_date.month in statistic_end:
-            statistic_end[end_date.month] += 1
+        if end_date.month in count_end_date:
+            count_end_date[end_date.month] += 1
         else:
-            statistic_end[end_date.month] = 1
+            count_end_date[end_date.month] = 1
 
-    statistic = {}
+    count_dates = {}
     for month in range(1, 13):
-        if month not in statistic_get.keys():
-            statistic_get[month] = 0
-        if month not in statistic_end.keys():
-            statistic_end[month] = 0
-        statistic[month] = [statistic_get[month], statistic_end[month]]
-    df = pd.DataFrame.from_dict(statistic,
-                                orient='index',
-                                columns=['amount of get', 'amount of end'])
+        if month not in count_start_date.keys():
+            count_start_date[month] = 0
+        if month not in count_end_date.keys():
+            count_end_date[month] = 0
+        count_dates[month] = [count_start_date[month], count_end_date[month]]
+    df_count_dates = pd.DataFrame.from_dict(count_dates,
+                                            orient='index',
+                                            columns=['Received',
+                                                     'Implemented'])
 
-    df.index.rename('month', inplace=True)
+    df_count_dates.index.rename('month', inplace=True)
     print(data)
-    print(df.sort_values(by='month'))
-    return df.sort_values(by='month')
+    return df_count_dates.sort_values(by='month')
 
 
-df = df_month()
-df.plot(kind='bar')
-plt.show()
+# Draws a histogram
+df = count_dates_from_df(DATA)
+# df.plot(kind='bar')
+# plt.show()
 
 
 
