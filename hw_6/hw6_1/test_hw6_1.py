@@ -5,6 +5,7 @@ from main import get_implementation_time, RussianHolidays
 
 
 # TODO warnings
+# passing different params to the 'get_implementation_time' function
 @pytest.mark.parametrize(
     'row_of_df, expected_result',
     [
@@ -29,11 +30,16 @@ from main import get_implementation_time, RussianHolidays
     ]
 )
 def test_get_implementation_time(row_of_df, expected_result):
+    # custom calendar of russian holidays
     rus_cal = RussianHolidays()
-    DATA = pd.DataFrame(data=row_of_df,
+
+    # preparing data frame for proper tests
+    data = pd.DataFrame(data=row_of_df,
                         columns=['Name',
                                  'Start Date', 'End Date']).set_index('Name')
-    assert get_implementation_time(DATA, rus_cal) == expected_result
+
+    # start tests with set above parameters
+    assert get_implementation_time(data, rus_cal) == expected_result
 
 
 

@@ -9,7 +9,7 @@ def random_date():
     if rd_month in [1, 3, 5, 7, 8, 10, 12]:
         rd_day = random.randint(1, 31)
     elif rd_month == 2:
-        rd_day = random.randint(1, 29)
+        rd_day = random.randint(1, 28)
     else:
         rd_day = random.randint(1, 30)
     rd_hour = random.randint(0, 23)
