@@ -9,7 +9,6 @@ from random import randint
 import logging
 from data_generator import data_generate, YEAR
 
-YEAR = YEAR
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logging.getLogger('matplotlib.font_manager').disabled = True
 
@@ -105,7 +104,7 @@ def delete_catalog_recurs(catalog):
 
 
 def main():
-    N = randint(1, 5)
+    N = randint(1, 6)
 
     # create folder for saving files with histograms there
     try:
