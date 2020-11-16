@@ -4,135 +4,150 @@ import time
 import pandas as pd
 import numpy as np
 import requests
-from pandas.tseries.holiday import AbstractHolidayCalendar, Holiday
 import matplotlib.pyplot as plt
 from random import randint
-from hw_6.hw6_1.data_generator import data_generate
+import logging
+from data_generator import data_generate, YEAR
 
-YEAR = 2019
+YEAR = YEAR
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.getLogger('matplotlib.font_manager').disabled = True
 
 
 # Preparing custom holidays from url
-class RussianHolidays(AbstractHolidayCalendar):
-    global YEAR
-    url_holidays_calendar = f'http://jsoncalendar.ru/data/{YEAR}/calendar.json'
+def get_custom_holidays(year):
+    url_holidays_calendar = f'http://jsoncalendar.ru/data/{year}/calendar.json'
 
-    rules = []
+    custom_holidays_np = []
     holidays_json = requests.get(url_holidays_calendar).json()
     for holiday in holidays_json['days']:
         if holiday['type'] == 1:
-            name = holiday['holiday_id']
             month = int(holiday['date_string'][:2])
             day = int(holiday['date_string'][3:])
-            rules.append(Holiday(name, month=month, day=day))
+            custom_holidays_np.append(pd.Timestamp(YEAR, month, day).date())
+    return custom_holidays_np
 
 
-# Counts implementation time from data frame
-def get_implementation_time(data, holiday_calendar):
-    timedelta_dict = {}
-    for id_r, row in data.iterrows():
-        name = row.name
-        start_date = row['Start Date']
-        end_date = row['End Date']
-
-        delta = pd.Timedelta(days=1)
-        if end_date.hour < 8:
-            delta = pd.Timedelta(days=0)
-        business_hours = pd.offsets.CustomBusinessHour(start='08:00', end='18:00', calendar=holiday_calendar)
-        working_hours = pd.bdate_range(start_date, end_date + delta, freq=business_hours)
-        if 8 <= end_date.hour < 18 and len(working_hours):
-            i = len(working_hours) - 1
-            while end_date.hour != working_hours[i].hour:
-                i -= 1
-            hours = i
-            minutes = end_date.minute
-        else:
-            hours = len(working_hours)
-            minutes = 0
-        timedelta_dict[name] = pd.Timedelta(hours=hours, minutes=minutes)
-    return timedelta_dict
+CUSTOM_HOLIDAYS_CALENDAR = get_custom_holidays(YEAR)
 
 
-# Adds new column to data frame with implementation time from dictionary
-def add_column_to_df(data, timedelta_dict):
-    data['Implementation time'] = pd.Series(timedelta_dict)
-    return data
+def is_business_day(date):
+    return bool(len(pd.bdate_range(date, date, freq='C',
+                                   holidays=CUSTOM_HOLIDAYS_CALENDAR)))
 
 
-# Counts amount of dates from data frame by month
-def count_dates_from_df(data):
-    count_start_date = {}
-    count_end_date = {}
-    for id_r, row in data.iterrows():
-        start_date = row['Start Date']
-        if start_date.month in count_start_date:
-            count_start_date[start_date.month] += 1
-        else:
-            count_start_date[start_date.month] = 1
+# Counts business time between two dates and amount of dates by month
+def get_implementation_time(start_date, end_date, count_dates):
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
+    busdays = np.busday_count(start_date.date(), end_date.date(),
+                              holidays=CUSTOM_HOLIDAYS_CALENDAR)
+    hours = busdays * 10
+    minutes = 0
 
-        end_date = row['End Date']
-        if end_date.month in count_end_date:
-            count_end_date[end_date.month] += 1
-        else:
-            count_end_date[end_date.month] = 1
+    if is_business_day(start_date):
+        if 8 < start_date.hour < 18:
+            hours -= start_date.hour - 8
+            if start_date.minute != 0:
+                hours -= 1
+                minutes += 60 - start_date.minute
+        elif start_date.hour > 18:
+            hours -= 10
+    if is_business_day(end_date):
+        if 8 < end_date.hour < 18:
+            hours += end_date.hour - 8
+            minutes += end_date.minute
+        elif end_date.hour > 18:
+            hours += 10
+    count_dates[start_date.month][0] += 1
+    count_dates[end_date.month][1] += 1
 
-    count_dates = {}
-    for month in range(1, 13):
-        if month not in count_start_date.keys():
-            count_start_date[month] = 0
-        if month not in count_end_date.keys():
-            count_end_date[month] = 0
-        count_dates[month] = [count_start_date[month], count_end_date[month]]
-    df_count_dates = pd.DataFrame.from_dict(count_dates,
+    return pd.Timedelta(hours=hours, minutes=minutes)
+
+
+# saves svg files with histogram in 'figures' catalog
+def histogram_for_df(count_dates_dict, i, N):
+    df_count_dates = pd.DataFrame.from_dict(count_dates_dict,
                                             orient='index',
                                             columns=['Received',
                                                      'Implemented'])
 
     df_count_dates.index.rename('month', inplace=True)
-    return df_count_dates.sort_values(by='month')
+    df_for_hist = df_count_dates.sort_values(by='month')
+
+    fig = df_for_hist.plot(kind='bar', title=f'{i} of {N} dataframes')
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.ylabel("Amount")
+    months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    plt.xticks(np.arange(12), months)
+    fig.figure.savefig(f'figures/fig_{i}.svg')
+    plt.clf()
+    plt.close()
 
 
-# Draws a histogram
-def draw_hist(dataframe):
-    return dataframe.plot(kind='bar')
+# Displays 'Dependency of performance speed on N' graph
+def create_graph(performance_time, N):
+    plt.clf()
+    df = pd.Series(performance_time)
+    df.plot(title='Dependency of performance speed on N')
+    plt.xticks(rotation=0, horizontalalignment="center")
+    plt.xlabel("N")
+    plt.ylabel("Performance speed (s)")
+    plt.xlim(1)
+    plt.xticks(np.arange(1, N + 1))
+    plt.show()
 
 
-def delete_catalog_recurs():
-    shutil.rmtree('figures')
+# removes given catalog with its content
+def delete_catalog_recurs(catalog):
+    shutil.rmtree(catalog)
 
 
 def main():
-    N = randint(2, 2)
-    os.mkdir('figures')
-    rus_cal = RussianHolidays()
-    perfomance_time = []
+    N = randint(1, 5)
+
+    # create folder for saving files with histograms there
+    try:
+        os.mkdir('figures')
+    except FileExistsError as e:
+        logging.info(e)
+        pass
+
+    # a list with performance time of each cycle
+    performance_time = [0]
+
     for i in range(1, N+1):
         start_program_time = time.time()
-        print(f'{i} of {N} dataframes')
+        logging.info(f'{i} of {N} dataframes')
 
         data = data_generate(10**i)
-        implementation_dict = get_implementation_time(data, rus_cal)
-        df_with_impl_time = add_column_to_df(data, implementation_dict)
-        df_for_hist = count_dates_from_df(df_with_impl_time)
-        fig = draw_hist(df_for_hist)
-        fig.figure.savefig(f'figures/fig_{i}.svg')
-        plt.close()
+
+        # dictionary to store the statistic by month
+        count_dates_dict = {i: [0, 0] for i in range(1, 13)}
+
+        vec_get_implementation_time = np.vectorize(get_implementation_time)
+        time_deltas_array = vec_get_implementation_time(data['Start Date'],
+                                                        data['End Date'],
+                                                        count_dates_dict)
+        data['Implementation time'] = time_deltas_array
+
+        # clear out affect of np.vectorize cache (doubles 1st line of data)
+        count_dates_dict[data['Start Date'][0].month][0] -= 1
+        count_dates_dict[data['End Date'][0].month][1] -= 1
+
+        histogram_for_df(count_dates_dict, i, N)
 
         perform_time = time.time() - start_program_time
-        perfomance_time.append(perform_time)
-        print(f'time of performance: {perform_time} seconds')
+        performance_time.append(perform_time)
+        logging.info(f'time of performance: {perform_time} seconds')
 
-    plt.clf()
-    df = pd.Series(perfomance_time)
-    df.plot()
-    plt.show()
-
+    create_graph(performance_time, N)
 
 
 if __name__ == '__main__':
     main()
-    # delete_catalog_recurs()
-
+    # delete_catalog_recurs('figures')
 
 
 
