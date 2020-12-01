@@ -25,8 +25,9 @@ def clear_folder(folder):
 
 
 if __name__ == '__main__':
-    bin_files_create('input')
-    # clear_folder('input')
+    # bin_files_create('input')
+    clear_folder('input')
+    clear_folder('output')
 
 
 
