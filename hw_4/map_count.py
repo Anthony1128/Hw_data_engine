@@ -25,7 +25,7 @@ def listdir_nohidden(path):
 if __name__ == '__main__':
     input_filenames = os.environ['INPUT_FILENAMES'].split(';')
     for input_filename in input_filenames:
-        output_filename = f'{input_filename[:5]}.json'
+        output_filename = f'{input_filename[:-3]}.json'
         map_result = map_binary(input_filename, INPUT_DIRECTORY)
         with open(os.path.join(OUTPUT_DIRECTORY,
                                output_filename), 'w') as output_file:

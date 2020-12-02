@@ -21,9 +21,9 @@ def reduce_results(results):
 
 class MRframework:
     def __init__(self, input_dir='input', n=3):
-        self.CONTAINER_NAME = 'hw4_mr'
-        self.INPUT_DIRECTORY = os.path.abspath(input_dir)
-        self.OUTPUT_DIRECTORY = os.path.abspath('output')
+        self.image_name = 'hw4_mr'
+        self.input_directory = os.path.abspath(input_dir)
+        self.output_directory = os.path.abspath('output')
         self.N = n
 
         self.reduce_results = reduce_results
@@ -38,11 +38,11 @@ class MRframework:
 
         host_config = self.client.create_host_config(
             binds={
-                self.INPUT_DIRECTORY: {
+                self.input_directory: {
                     'bind': '/input',
                     'mode': 'ro'
                 },
-                self.OUTPUT_DIRECTORY: {
+                self.output_directory: {
                     'bind': '/output',
                     'mode': 'rw'
                 }
@@ -54,7 +54,7 @@ class MRframework:
             }
 
         container = self.client.create_container(
-            image=self.CONTAINER_NAME,
+            image=self.image_name,
             user=os.getuid(),
             host_config=host_config,
             environment=environment)
@@ -64,17 +64,17 @@ class MRframework:
         return container
 
     def reduce_output_files(self):
-        filenames = [filename for filename in os.listdir(self.OUTPUT_DIRECTORY)
+        filenames = [filename for filename in os.listdir(self.output_directory)
                      if filename.endswith('.json')]
         results = []
         for filename in filenames:
-            with open(os.path.join(self.OUTPUT_DIRECTORY,
+            with open(os.path.join(self.output_directory,
                                    filename), 'r') as output_file:
                 results.append(json.loads(output_file.read()))
         return self.reduce_results(results)
 
     def run(self):
-        filenames = self.get_filenames(self.INPUT_DIRECTORY)
+        filenames = self.get_filenames(self.input_directory)
         chunk_size = int(math.ceil(len(filenames) / float(self.N)))
         containers = []
 
