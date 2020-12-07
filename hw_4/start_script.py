@@ -2,6 +2,7 @@ import argparse
 from docker_main import MRframework
 
 
+# Runs Map Reduce job with given path to input folder and amount of containers
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('dir', help='path to directory with .gz files')
