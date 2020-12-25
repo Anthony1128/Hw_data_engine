@@ -1,0 +1,18 @@
+{
+        "name": "jdbc_sink_postgres",
+        "config": {
+                "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+                "connection.url": "jdbc:postgresql://postgres:5432/postgres",
+                "connection.user": "postgres",
+                "connection.password": "postgres",
+                "topics": "de-enriched-data",
+                "insert.mode":"insert",
+                "auto.create": true,
+                "tasks.max": 1,
+                "value.converter": "org.apache.kafka.connect.storage.StringConverter",
+                "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+                "transforms": "flatten",
+                "transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten$Value",
+                "table.name.format": "kafka_sink_table"
+                }
+        }
