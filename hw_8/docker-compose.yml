@@ -87,5 +87,16 @@ services:
     volumes:
      - ./data/postgres:/docker-entrypoint-initdb.d/
 
+  es:
+   container_name: elasticsearch
+   image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+   ports:
+     - "9200:9200"
+   volumes:
+     - db-leach:/usr/share/elasticsearch/data
+   environment:
+     ES_JAVA_OPTS: "-Xmx512m -Xms32m"
+     "discovery.type": "single-node"
+
 volumes:
     db-leach: {} 
