@@ -1,5 +1,6 @@
 from kafka import KafkaConsumer, TopicPartition, KafkaProducer
 from json import loads, dumps
+from table_generator import main as table_generate
 
 
 def consumer_from_postgres(consumer):
@@ -16,6 +17,7 @@ def consumer_from_postgres(consumer):
 
 
 def main():
+    # table_generate()
     consumer = KafkaConsumer(bootstrap_servers=['localhost:9092'],
                              auto_offset_reset='earliest',
                              enable_auto_commit=True,
