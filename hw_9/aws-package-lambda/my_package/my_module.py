@@ -1,6 +1,9 @@
 import pandas as pd
+from sqlalchemy import create_engine
 import awswrangler as wr
+from time import time
 from io import StringIO
+import rds_config
 
 
 def read_csv_from_s3(s3_bucket_name, object_key,  client):
@@ -12,6 +15,7 @@ def read_csv_from_s3(s3_bucket_name, object_key,  client):
 
 def filter_df(dataframe):
     columns_to_select = set(dataframe.columns[:len(dataframe.columns) // 2])
+    country = pd.DataFrame([{}])
     for column, type in dict(dataframe.dtypes).items():
         if column in ['country']:
             columns_to_select.add(column)
@@ -30,5 +34,18 @@ def write_df_to_s3(s3_bucket_name, dataframe):
     wr.s3.to_parquet(df=dataframe, path=s3_bucket_name)
 
 
-def write_df_to_db():
-    pass
+def write_df_to_db(rds_host, dataframe):
+    print('step1')
+    user = rds_config.db_username
+    password = rds_config.db_password
+    db_name = rds_config.db_name
+    print('step2')
+    engine = create_engine(f'postgresql://{user}:{password}@{rds_host}/{db_name}')
+    df = dataframe
+    table_name = f'table_{time()}'
+    print('step3')
+    df.to_sql(name=f'{table_name}', con=engine, if_exists='replace', index=False)
+    print('step4')
+    df = pd.read_sql_table(table_name=table_name, con=engine)
+    print('step5')
+    return df
