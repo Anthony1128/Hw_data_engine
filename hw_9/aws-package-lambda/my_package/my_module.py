@@ -34,18 +34,12 @@ def write_df_to_s3(s3_bucket_name, dataframe):
     wr.s3.to_parquet(df=dataframe, path=s3_bucket_name)
 
 
-def write_df_to_db(rds_host, dataframe):
-    print('step1')
+def write_df_to_db(rds_host, dataframe, table_name):
     user = rds_config.db_username
     password = rds_config.db_password
     db_name = rds_config.db_name
-    print('step2')
     engine = create_engine(f'postgresql://{user}:{password}@{rds_host}/{db_name}')
     df = dataframe
-    table_name = f'table_{time()}'
-    print('step3')
     df.to_sql(name=f'{table_name}', con=engine, if_exists='replace', index=False)
-    print('step4')
     df = pd.read_sql_table(table_name=table_name, con=engine)
-    print('step5')
     return df
