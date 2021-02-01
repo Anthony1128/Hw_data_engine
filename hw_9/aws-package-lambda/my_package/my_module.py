@@ -16,11 +16,13 @@ def read_csv_from_s3(s3_bucket_name, object_key,  client):
 def filter_df(dataframe):
     columns_to_select = set(dataframe.columns[:len(dataframe.columns) // 2])
     country = pd.DataFrame([{}])
+    column_country = ''
     for column, type in dict(dataframe.dtypes).items():
-        if column in ['country']:
+        if 'country' in str(column).lower():
             columns_to_select.add(column)
-            country = dataframe.sample()['country']
-    df = dataframe[columns_to_select][dataframe['country'] == country.item()] \
+            column_country = str(column)
+            country = dataframe.sample()[column_country]
+    df = dataframe[columns_to_select][dataframe[column_country] == country.item()] \
         if not country.empty else dataframe[columns_to_select]
 
     values = {column: -1 if type in ['int', 'float'] else 'empty' for
